@@ -3,7 +3,7 @@
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)
 
-[![youtube]https://img.shields.io/badge/youtube_channel_here-webdriver_torso-red)](https://www.youtube.com/channel/UCsLiV4WJfkTEHH0b9PmRklw)
+[![youtube](https://img.shields.io/badge/youtube_channel_here-webdriver_torso-red)](https://www.youtube.com/channel/UCsLiV4WJfkTEHH0b9PmRklw)
 
 # Requirements:
 ```requirements.txt
