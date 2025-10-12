@@ -6,6 +6,7 @@ from scipy.io import wavfile
 import os
 import random
 import string
+from pathlib import Path
 
 # Video/audio settings
 width, height = 640, 480
@@ -20,15 +21,32 @@ def generate_tmp():
     suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
     return 'tmp' + suffix
 
-# Try common Courier New font locations, fallback to FreeMono
-font_paths = [
-    '/usr/share/fonts/truetype/msttcorefonts/Courier_New.ttf',
-    '/usr/share/fonts/truetype/courier/Courier_New.ttf',
-    '/usr/share/fonts/truetype/freefont/FreeMono.ttf'
-]
-font_path = next((fp for fp in font_paths if os.path.exists(fp)), None)
+def find_courbd_font():
+    # User font directories
+    user_dirs = [
+        str(Path.home()),
+        os.path.join(str(Path.home()), '.fonts'),
+        os.path.join(str(Path.home()), 'fonts'),
+    ]
+    for d in user_dirs:
+        candidate = os.path.join(d, 'courbd.ttf')
+        if os.path.exists(candidate):
+            return candidate
+    # System font locations (common on Linux)
+    system_paths = [
+        '/usr/share/fonts/truetype/msttcorefonts/courbd.ttf',
+        '/usr/share/fonts/truetype/msttcorefonts/Courier_New_Bold.ttf',
+        '/usr/share/fonts/truetype/courier/courbd.ttf',
+        '/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf'
+    ]
+    for p in system_paths:
+        if os.path.exists(p):
+            return p
+    return None
+
+font_path = find_courbd_font()
 if font_path is None:
-    raise Exception("Courier New or FreeMono font not found. Install ttf-mscorefonts-installer or adjust font_path.")
+    raise Exception("Courier New Bold (courbd.ttf) not found in user or system directories. Please install or provide the font.")
 
 font = ImageFont.truetype(font_path, 32)
 
@@ -53,7 +71,7 @@ fourcc = cv2.VideoWriter_fourcc(*'FLV1')
 video = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 
 # Title card
-tmp_title = generate_tmp()  # e.g., "tmpMoJ4t"
+tmp_title = generate_tmp()
 title_img = Image.new("RGB", (width, height), (255, 255, 255))
 draw = ImageDraw.Draw(title_img)
 w, h = draw.textsize(tmp_title, font=font)
@@ -77,7 +95,7 @@ for idx in range(num_slides):
     x2r, y2r = np.random.randint(width//2, width), np.random.randint(height//2, height)
     draw.rectangle([x1r, y1r, x2r, y2r], fill=(255, 0, 0))
 
-    # Bottom-left text in Courier New
+    # Bottom-left text in Courier New Bold
     slide_text = f"aqua.flv - Slide {idx:04d}"
     draw.text((10, height - 45), slide_text, font=font, fill=(0, 0, 0))
 
@@ -91,4 +109,4 @@ video.release()
 # Merge video and audio (requires ffmpeg)
 os.system(f"ffmpeg -y -i {output_video} -i {output_audio} -c:v copy -c:a aac -strict experimental {final_output}")
 
-print(f"process done! {final_output}")
+print(f"Done! {final_output}")
