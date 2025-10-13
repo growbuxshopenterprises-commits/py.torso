@@ -1,4 +1,5 @@
-# WEBDRIVER TORSO GENERATOR, Brand rampage similar to webdriver torso, a youtube test channel from 2014!
+# WEBDRIVER TORSO.py, Brand rampage of webdriver torso on youtube!
+# Note: if you dont have the courbd.ttf on the linux files, it will have an error.
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -12,7 +13,7 @@ from pathlib import Path
 width, height = 640, 480
 fps = 25
 num_slides = 10
-slide_duration = 0.5  # seconds per slide
+slide_duration = 1  # seconds per slide
 output_video = 'webdriver_torso_aqua.flv'
 output_audio = 'webdriver_torso_beeps.wav'
 final_output = 'aqua_webdriver_torso_final.flv'
@@ -45,10 +46,16 @@ def find_courbd_font():
     return None
 
 font_path = find_courbd_font()
-if font_path is None:
-    raise Exception("Courier New Bold (courbd.ttf) not found in user or system directories. Please install or provide the font.")
-
-font = ImageFont.truetype(font_path, 32)
+try:
+    if font_path is not None:
+        print(f"Using font: {font_path}")
+        font = ImageFont.truetype(font_path, 32)
+    else:
+        print("Courier New Bold (courbd.ttf) not found. Using default PIL font.")
+        font = ImageFont.load_default()
+except OSError as e:
+    print(f"Failed to load font: {e}. Using default PIL font.")
+    font = ImageFont.load_default()
 
 def make_beep(frequency=1000, duration=0.5, sr=44100, volume=0.5):
     t = np.linspace(0, duration, int(sr * duration), False)
@@ -95,7 +102,7 @@ for idx in range(num_slides):
     x2r, y2r = np.random.randint(width//2, width), np.random.randint(height//2, height)
     draw.rectangle([x1r, y1r, x2r, y2r], fill=(255, 0, 0))
 
-    # Bottom-left text in Courier New Bold
+    # Bottom-left text in Courier New Bold (or fallback)
     slide_text = f"aqua.flv - Slide {idx:04d}"
     draw.text((10, height - 45), slide_text, font=font, fill=(0, 0, 0))
 
@@ -109,4 +116,4 @@ video.release()
 # Merge video and audio (requires ffmpeg)
 os.system(f"ffmpeg -y -i {output_video} -i {output_audio} -c:v copy -c:a aac -strict experimental {final_output}")
 
-print(f"Done! {final_output}")
+print(f"generated vid {final_output}")
