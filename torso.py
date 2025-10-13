@@ -1,5 +1,6 @@
 # WEBDRIVER TORSO.py, Brand rampage of webdriver torso on youtube!
 # Note: if you dont have the courbd.ttf on the linux files, it will have an error.
+
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -23,7 +24,6 @@ def generate_tmp():
     return 'tmp' + suffix
 
 def find_courbd_font():
-    # User font directories
     user_dirs = [
         str(Path.home()),
         os.path.join(str(Path.home()), '.fonts'),
@@ -33,7 +33,6 @@ def find_courbd_font():
         candidate = os.path.join(d, 'courbd.ttf')
         if os.path.exists(candidate):
             return candidate
-    # System font locations (common on Linux)
     system_paths = [
         '/usr/share/fonts/truetype/msttcorefonts/courbd.ttf',
         '/usr/share/fonts/truetype/msttcorefonts/Courier_New_Bold.ttf',
@@ -77,11 +76,15 @@ wavfile.write(output_audio, 44100, audio)
 fourcc = cv2.VideoWriter_fourcc(*'FLV1')
 video = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 
-# Title card
+# Title card (robust sizing)
 tmp_title = generate_tmp()
 title_img = Image.new("RGB", (width, height), (255, 255, 255))
 draw = ImageDraw.Draw(title_img)
-w, h = draw.textsize(tmp_title, font=font)
+try:
+    bbox = font.getbbox(tmp_title)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+except AttributeError:
+    w, h = font.getsize(tmp_title)
 draw.text(((width - w)//2, (height - h)//2), tmp_title, font=font, fill=(0,0,255))
 title_frame = np.array(title_img)
 for _ in range(fps):  # 1 second
@@ -116,4 +119,4 @@ video.release()
 # Merge video and audio (requires ffmpeg)
 os.system(f"ffmpeg -y -i {output_video} -i {output_audio} -c:v copy -c:a aac -strict experimental {final_output}")
 
-print(f"mission success! generated vid now {final_output}")
+print(f"oh yea! generated vid now as {final_output}")
