@@ -28,19 +28,24 @@ final_flv = os.path.join(output_dir, f'{file_base_name}_final.flv')
 final_mp4 = os.path.join(output_dir, f'{file_base_name}_final.mp4')
 
 def find_courbd_font():
+    font_names = [
+        'courbd.ttf',
+        'Courier_New_Bold.ttf',
+        'FreeMonoBold.ttf',
+    ]
     user_dirs = [
         str(Path.home()),
         os.path.join(str(Path.home()), '.fonts'),
         os.path.join(str(Path.home()), 'fonts'),
     ]
     for d in user_dirs:
-        candidate = os.path.join(d, 'courbd.ttf')
-        if os.path.exists(candidate):
-            return candidate
+        for name in font_names:
+            candidate = os.path.join(d, name)
+            if os.path.exists(candidate):
+                return candidate
     system_paths = [
         '/usr/share/fonts/truetype/msttcorefonts/courbd.ttf',
         '/usr/share/fonts/truetype/msttcorefonts/Courier_New_Bold.ttf',
-        '/usr/share/fonts/truetype/courier/courbd.ttf',
         '/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf'
     ]
     for p in system_paths:
@@ -54,7 +59,7 @@ try:
         print(f"Using font: {font_path}")
         font = ImageFont.truetype(font_path, 48)
     else:
-        print("Courier New Bold (courbd.ttf) not found. Using default PIL font.")
+        print("Courier New Bold or FreeMonoBold not found. Using default PIL font.")
         font = ImageFont.load_default()
 except OSError as e:
     print(f"Failed to load font: {e}. Using default PIL font.")
@@ -80,7 +85,7 @@ wavfile.write(output_audio, 44100, audio)
 fourcc = cv2.VideoWriter_fourcc(*'FLV1')
 video = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 
-# --- Title card (robust sizing) ---
+# --- First frame: only the TMP name in blue, centered ---
 title_img = Image.new("RGB", (width, height), (255, 255, 255))
 draw = ImageDraw.Draw(title_img)
 try:
@@ -128,4 +133,4 @@ video.release()
 os.system(f"ffmpeg -y -i '{output_video}' -i '{output_audio}' -c:v copy -c:a aac -strict experimental '{final_flv}'")
 os.system(f"ffmpeg -y -i '{final_flv}' -c:v libx264 -c:a aac -strict experimental '{final_mp4}'")
 
-print(f"mission success, uploaded as {final_mp4}")
+print(f"vid saved as {final_mp4}")
