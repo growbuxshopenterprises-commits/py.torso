@@ -13,7 +13,7 @@ from pathlib import Path
 width, height = 640, 480
 fps = 25
 num_slides = 10
-slide_duration = 1  # seconds per slide
+slide_duration = 0.5  # seconds per slide
 output_video = 'webdriver_torso_aqua.flv'
 output_audio = 'webdriver_torso_beeps.wav'
 final_output = 'aqua_webdriver_torso_final.flv'
@@ -116,4 +116,4 @@ video.release()
 # Merge video and audio (requires ffmpeg)
 os.system(f"ffmpeg -y -i {output_video} -i {output_audio} -c:v copy -c:a aac -strict experimental {final_output}")
 
-print(f"generated vid {final_output}")
+print(f"mission success! generated vid now {final_output}")
