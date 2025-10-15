@@ -16,14 +16,14 @@ fps = 25
 slides_per_video = 10
 num_videos = 10
 slide_duration = 1.0   # seconds per slide
-extra_audio_seconds = 1.0  # 1 second beyond last slide
+extra_seconds = 1.0    # hold last slide for 1 more second (total duration: 11 seconds)
 output_dir = '.'
 
 def generate_tmp():
-    suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=7))
+    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
     return 'tmp' + suffix
 
-def find_liberation_mono_bold():
+def find_mono_bold():
     font_candidates = [
         '/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf',
         '/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf',
@@ -42,30 +42,27 @@ def make_beep(frequency=1000, duration=1.0, sr=44100, volume=0.5):
     beep = np.int16(beep * 32767)
     return beep
 
-font_path = find_liberation_mono_bold()
+font_path = find_mono_bold()
 try:
     if font_path is not None:
-        print(f"Using font: {font_path}")
-        font = ImageFont.truetype(font_path, 24)
+        font = ImageFont.truetype(font_path, 18)  # small font for classic look
     else:
-        print("Liberation Mono Bold/FreeMonoBold/Courier not found. Using default PIL font.")
         font = ImageFont.load_default()
-except OSError as e:
-    print(f"Failed to load font: {e}. Using default PIL font.")
+except OSError:
     font = ImageFont.load_default()
 
 for video_num in range(num_videos):
     file_base_name = generate_tmp()
-    output_video = os.path.join(output_dir, f'{file_base_name}.flv')
+    output_video = os.path.join(output_dir, f'{file_base_name}_aqua.flv')
     output_audio = os.path.join(output_dir, f'{file_base_name}_beeps.wav')
-    final_mp4 = os.path.join(output_dir, f'{file_base_name}_final.mp4')
+    output_mp4 = os.path.join(output_dir, f'{file_base_name}_aqua.mp4')
 
     fourcc = cv2.VideoWriter_fourcc(*'FLV1')
     video = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 
     frames = []
 
-    # Generate 10 slides (Slide 0000 ... 0009)
+    # Generate 10 slides
     for idx in range(slides_per_video):
         frame_img = Image.new("RGB", (width, height), (255, 255, 255))
         draw = ImageDraw.Draw(frame_img)
@@ -78,8 +75,8 @@ for video_num in range(num_videos):
         red_rect = [250, 0, width-20, height-20]
         draw.rectangle(red_rect, fill=(255, 0, 0))
 
-        # Text: bottom left
-        slide_text = f"{file_base_name}.flv - Slide {idx:04d}"
+        # Text: bottom left, small font
+        slide_text = f"aqua.flv - Slide {idx:04d}"
         try:
             bbox = font.getbbox(slide_text)
             sw, sh = bbox[2] - bbox[0], bbox[3] - bbox[1]
@@ -93,16 +90,16 @@ for video_num in range(num_videos):
         for _ in range(int(slide_duration * fps)):
             video.write(frame)
 
-    # After slide 0009, hold the last frame for 1 extra second
+    # Hold last slide for extra_seconds (1 sec)
     last_frame = frames[-1]
-    for _ in range(int(extra_audio_seconds * fps)):
+    for _ in range(int(extra_seconds * fps)):
         video.write(last_frame)
 
     video.release()
 
-    # Generate beep audio: 11 beeps, 1 second each
+    # Generate beep audio: 11 beeps, 1 second each (10 slides + 1 stuck last slide)
     audio_samples = []
-    for _ in range(slides_per_video + 1):  # 10 slides + 1 extra beep
+    for _ in range(slides_per_video + 1):
         freq = np.random.choice([880, 1000, 1200, 1500, 2000])
         beep = make_beep(frequency=freq, duration=slide_duration)
         audio_samples.append(beep)
@@ -110,15 +107,6 @@ for video_num in range(num_videos):
     wavfile.write(output_audio, 44100, audio)
 
     # Convert to MP4 (requires ffmpeg)
-    ret = os.system(f"ffmpeg -y -i '{output_video}' -i '{output_audio}' -c:v libx264 -c:a aac -strict experimental '{final_mp4}'")
-    if ret != 0:
-        print(f"FFmpeg failed for {output_video}")
-    else:
-        print(f"10 videos generated {final_mp4}")
+    os.system(f"ffmpeg -y -i '{output_video}' -i '{output_audio}' -c:v libx264 -c:a aac -strict experimental '{output_mp4}'")
 
-    # Clean up intermediate files
-    for fname in [output_video, output_audio]:
-        try:
-            os.remove(fname)
-        except FileNotFoundError:
-            pass
+    print(f"Done! Video saved as {output_mp4}")
