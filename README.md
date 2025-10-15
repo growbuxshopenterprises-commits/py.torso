@@ -1,4 +1,5 @@
 # py-webdriver-torso. Make webdriver torso videos like webdriver torso.
+Make videos like webdriver torso
 [![python](https://img.shields.io/badge/python-v3.8.3-green?style=for-the-badge)](https://www.python.org/downloads/release/python-383/)
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)
@@ -25,7 +26,8 @@ sudo apt install python3-pip
 For chromebook users, go to settings > developer, you will se Linux development, download it, and run the script.
 
 Note:
-You need to download the font. The best font is courier new bold, I can't put it on here of copyright issues, Grab the font it should be like courbd.tff. I
+You need to download the font. The best font is aqua.flv font. I can put it here, but download the font and rename it to courbd.ttf 
+Font:  https://fontstruct.com/fontstructions/show/2640261/aqua-flv
 
 Also for windows users:
 The script must find the storage. or it will fail.
