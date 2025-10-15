@@ -1,5 +1,6 @@
 # py-webdriver-torso. Make webdriver torso videos like webdriver torso.
-Make videos like webdriver torso
+Make videos like webdriver torso.
+
 [![python](https://img.shields.io/badge/python-v3.8.3-green?style=for-the-badge)](https://www.python.org/downloads/release/python-383/)
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)
