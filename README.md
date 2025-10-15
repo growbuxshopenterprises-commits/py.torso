@@ -34,4 +34,4 @@ Also for windows users:
 The script must find the storage. or it will fail.
 
 FFMPEG: https://ffmpeg.org/
-Note: if you want to change the font, you should rename it to courbd.ttf (the font you downloaded)
+Note: if you want to change the font, you should rename it to courbd.ttf (the font you want to use)
