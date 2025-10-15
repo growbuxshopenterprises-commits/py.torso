@@ -7,21 +7,22 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import os
 import random
-import string
-from pathlib import Path
 from scipy.io import wavfile
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+import pickle
 
 width, height = 1280, 720
 fps = 25
 slides_per_video = 10
 num_videos = 10
-slide_duration = 1.0   # seconds per slide
-extra_seconds = 1.0    # hold last slide for 1 more second (total duration: 11 seconds)
+slide_duration = 1.0
+extra_seconds = 1.0  # stuck last slide
 output_dir = '.'
 
 def generate_tmp():
-    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
-    return 'tmp' + suffix
+    return 'tmp' + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=7))
 
 def find_mono_bold():
     font_candidates = [
@@ -42,10 +43,40 @@ def make_beep(frequency=1000, duration=1.0, sr=44100, volume=0.5):
     beep = np.int16(beep * 32767)
     return beep
 
+def youtube_upload(video_file, title, description="", categoryId="22", privacyStatus="public"):
+    scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+    creds = None
+    if os.path.exists("token.pickle"):
+        with open("token.pickle", "rb") as token:
+            creds = pickle.load(token)
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file("client_secrets.json", scopes)
+        creds = flow.run_local_server(port=0)
+        with open("token.pickle", "wb") as token:
+            pickle.dump(creds, token)
+    youtube = build("youtube", "v3", credentials=creds)
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": ["webdriver torso"],
+                "categoryId": categoryId
+            },
+            "status": {
+                "privacyStatus": privacyStatus
+            }
+        },
+        media_body=MediaFileUpload(video_file)
+    )
+    response = request.execute()
+    print("YouTube upload complete! Video URL: https://youtu.be/" + response['id'])
+
 font_path = find_mono_bold()
 try:
     if font_path is not None:
-        font = ImageFont.truetype(font_path, 18)  # small font for classic look
+        font = ImageFont.truetype(font_path, 18)
     else:
         font = ImageFont.load_default()
 except OSError:
@@ -59,23 +90,16 @@ for video_num in range(num_videos):
 
     fourcc = cv2.VideoWriter_fourcc(*'FLV1')
     video = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
-
     frames = []
 
     # Generate 10 slides
     for idx in range(slides_per_video):
         frame_img = Image.new("RGB", (width, height), (255, 255, 255))
         draw = ImageDraw.Draw(frame_img)
-
-        # Blue rectangle: horizontal bar left
         blue_rect = [20, 100, 300, 140]
         draw.rectangle(blue_rect, fill=(0, 0, 255))
-
-        # Red rectangle: large vertical bar right
         red_rect = [250, 0, width-20, height-20]
         draw.rectangle(red_rect, fill=(255, 0, 0))
-
-        # Text: bottom left, small font
         slide_text = f"aqua.flv - Slide {idx:04d}"
         try:
             bbox = font.getbbox(slide_text)
@@ -83,7 +107,6 @@ for video_num in range(num_videos):
         except AttributeError:
             sw, sh = font.getsize(slide_text)
         draw.text((10, height - sh - 10), slide_text, font=font, fill=(0, 0, 0))
-
         frame = np.array(frame_img)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         frames.append(frame)
@@ -94,13 +117,12 @@ for video_num in range(num_videos):
     last_frame = frames[-1]
     for _ in range(int(extra_seconds * fps)):
         video.write(last_frame)
-
     video.release()
 
-    # Generate beep audio: 11 beeps, 1 second each (10 slides + 1 stuck last slide)
+    # Generate beep audio: 11 beeps
     audio_samples = []
     for _ in range(slides_per_video + 1):
-        freq = np.random.choice([880, 1000, 1200, 1500, 2000])
+        freq = random.choice([880, 1000, 1200, 1500, 2000])
         beep = make_beep(frequency=freq, duration=slide_duration)
         audio_samples.append(beep)
     audio = np.concatenate(audio_samples)
@@ -110,3 +132,11 @@ for video_num in range(num_videos):
     os.system(f"ffmpeg -y -i '{output_video}' -i '{output_audio}' -c:v libx264 -c:a aac -strict experimental '{output_mp4}'")
 
     print(f"Done! Video saved as {output_mp4}")
+
+    # Title for YouTube: file name without "_final" and extension
+    yt_title = os.path.basename(output_mp4).replace("_final", "").replace(".mp4", "")
+    # Upload to YouTube, public, empty description
+    try:
+        youtube_upload(output_mp4, yt_title, "")
+    except Exception as e:
+        print(f"Failed to upload to YouTube: {e}")
